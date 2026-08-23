@@ -30,6 +30,8 @@ func (s *Service) WithClock(clock Clock) *Service {
 	return s
 }
 
+func (s *Service) auditChainHead() string { return s.auditChain.Head() }
+
 type RequestMeta struct {
 	RequestID         string
 	ReleaseOperatorID *string

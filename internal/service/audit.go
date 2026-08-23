@@ -17,19 +17,22 @@ func ValidateAuditEvent(event auditpkg.Event) error {
 }
 
 func (s *Service) WriteAuditEvent(ctx context.Context, event auditpkg.Event) error {
-	head, err := s.auditChain.Append(event)
-	if err != nil {
-		return fmt.Errorf("advance audit chain: %w", err)
-	}
 	if event.Detail == nil {
 		event.Detail = make(map[string]any)
 	}
-	event.Detail["chain_head"] = head
-	detail, err := event.JSON()
+	_, err := s.auditChain.Advance(event, func(head string) error {
+		detail := event.Detail
+		detail["chain_head"] = head
+		payload, err := event.JSON()
+		if err != nil {
+			return err
+		}
+		return s.repo.WriteAudit(ctx, auditInput(event, payload))
+	})
 	if err != nil {
-		return err
+		return fmt.Errorf("advance audit chain: %w", err)
 	}
-	return s.repo.WriteAudit(ctx, auditInput(event, detail))
+	return nil
 }
 
 func auditInput(event auditpkg.Event, detail []byte) repository.AuditInput {
