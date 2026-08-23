@@ -35,21 +35,24 @@ func RunWithRetry(ctx context.Context, policy RetryPolicy, operation func(contex
 		return fmt.Errorf("retry attempts must be positive")
 	}
 	var last error
-	attemptCtx := ctx
-	cancelAttempt := func() {}
-	if policy.AttemptTimeout > 0 {
-		attemptCtx, cancelAttempt = context.WithTimeout(ctx, policy.AttemptTimeout)
-	}
-	defer cancelAttempt()
 	for attempt := 1; attempt <= policy.Attempts; attempt++ {
 		if err := ctx.Err(); err != nil {
 			return err
 		}
-		if err := operation(attemptCtx); err == nil {
-			return nil
-		} else {
-			last = err
+		// Each attempt gets its own time budget. A single shared timeout
+		// would be exhausted by the first attempt, so a later retry would
+		// observe an already-expired context and fail before it can run.
+		attemptCtx := ctx
+		cancelAttempt := func() {}
+		if policy.AttemptTimeout > 0 {
+			attemptCtx, cancelAttempt = context.WithTimeout(ctx, policy.AttemptTimeout)
 		}
+		err := operation(attemptCtx)
+		cancelAttempt()
+		if err == nil {
+			return nil
+		}
+		last = err
 		if attempt == policy.Attempts {
 			break
 		}
