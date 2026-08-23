@@ -23,13 +23,7 @@ func (s *Service) AssignManagedDevice(ctx context.Context, meta RequestMeta, ass
 		if err := repo.ValidateRolloutCampaignManagedDevice(ctx, assignment.RolloutCampaignID, assignment.ManagedDeviceID); err != nil {
 			return err
 		}
-		writer, ok := s.repo.(interface {
-			CreateAssignment(context.Context, domain.Assignment) error
-		})
-		if !ok {
-			return fmt.Errorf("assignment writer unavailable")
-		}
-		if err := writer.CreateAssignment(ctx, assignment); err != nil {
+		if err := repo.CreateAssignment(ctx, assignment); err != nil {
 			return err
 		}
 		return tx.WriteAudit(ctx, audit(meta, "assignment", assignment.ID, "create", "success", nil))
