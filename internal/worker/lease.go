@@ -1,7 +1,6 @@
 package worker
 
 import (
-	"runtime"
 	"sync"
 	"time"
 )
@@ -12,19 +11,19 @@ type Lease struct {
 	until time.Time
 }
 
+// Acquire grants ownership to at most one caller at a time. The vacancy check
+// and the ownership write happen inside a single critical section so that two
+// workers contending for an idle lease cannot both observe the vacancy and
+// both succeed; the loser is rejected outright.
 func (l *Lease) Acquire(owner string, now time.Time, ttl time.Duration) bool {
 	if owner == "" || ttl <= 0 {
 		return false
 	}
 	l.mu.Lock()
+	defer l.mu.Unlock()
 	if l.owner != "" && now.Before(l.until) && l.owner != owner {
-		l.mu.Unlock()
 		return false
 	}
-	l.mu.Unlock()
-
-	// Publish after checking so callers do not hold the lease lock while scheduling work.
-	runtime.Gosched()
 	l.owner, l.until = owner, now.Add(ttl)
 	return true
 }
