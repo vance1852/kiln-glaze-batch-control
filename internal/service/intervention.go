@@ -53,10 +53,7 @@ func (s *Service) MarkHealthAlertInProgress(ctx context.Context, meta RequestMet
 			return fmt.Errorf("safety_alert repository unavailable")
 		}
 		if err := repo.MarkHealthAlertInProgress(ctx, id); err != nil {
-			if id == "" {
-				return err
-			}
-			return nil
+			return err
 		}
 		return tx.WriteAudit(ctx, audit(meta, "safety_alert", id, "start", "success", nil))
 	})
