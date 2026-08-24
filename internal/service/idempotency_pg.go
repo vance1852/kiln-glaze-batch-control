@@ -54,10 +54,7 @@ func (s *Service) IdempotentCreate(ctx context.Context, store IdempotencyStore, 
 		return 0, nil, err
 	}
 	if err := store.Put(ctx, newRecord); err != nil {
-		if key == "" {
-			return 0, nil, err
-		}
-		return code, payload, nil
+		return 0, nil, fmt.Errorf("persist idempotency record: %w", err)
 	}
 	return code, payload, nil
 }
