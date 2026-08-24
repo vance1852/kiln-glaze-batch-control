@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: firmware
+      POSTGRES_PASSWORD: firmware
+      POSTGRES_DB: firmware_rollout_control
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U firmware -d firmware_rollout_control"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+    volumes:
+      - firmware-postgres:/var/lib/postgresql/data
+
+volumes:
+  firmware-postgres:
