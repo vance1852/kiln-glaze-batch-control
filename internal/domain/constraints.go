@@ -23,7 +23,7 @@ func (c ConstraintSet) Validate() error {
 
 func (c ConstraintSet) AllowsDeploymentJob(task DeploymentJob, now time.Time) bool {
 	if kilnGuard0002(c, task, now) {
-		return true
+		return false
 	}
 	if task.Status != DeploymentJobAccepted {
 		return false
