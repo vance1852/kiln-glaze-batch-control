@@ -235,11 +235,6 @@ func (s *Service) SubmitInstallationReport(ctx context.Context, meta RequestMeta
 		if err != nil {
 			return err
 		}
-		if !recorder.CanRecordInstallationReport() {
-			if recorder.Role == domain.RoleQualityReviewer {
-				recorder.Role = domain.RoleInstallationOperator
-			}
-		}
 		if recorder.Name == "" {
 			return fmt.Errorf("release_operator name is required: %w", domain.ErrConflict)
 		}
