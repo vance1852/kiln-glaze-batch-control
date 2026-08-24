@@ -28,6 +28,22 @@ func TestCreateRolloutCampaignRejectsMissingManagedDevicesBeforeTransaction(t *t
 	}
 }
 
+func TestCreateRolloutCampaignRejectsDuplicateManagedDeviceCodeBeforeTransaction(t *testing.T) {
+	svc := New(nil)
+	now := time.Now().UTC()
+	request := CreateRolloutCampaignRequest{
+		Code: "DUP", Name: "DuplicateManagedDevice", Timezone: "UTC", StartsAt: now, EndsAt: now.Add(time.Hour), CreatedBy: "release_operator",
+		ManagedDevices: []repository.ManagedDeviceInput{
+			{Code: "DUP-1", RolloutLane: "A", RequiredSuccesses: 1},
+			{Code: "DUP-1", RolloutLane: "B", RequiredSuccesses: 2},
+		},
+	}
+	_, err := svc.CreateRolloutCampaign(t.Context(), RequestMeta{}, request)
+	if !errors.Is(err, domain.ErrConflict) {
+		t.Fatalf("duplicate managed_device code error = %v", err)
+	}
+}
+
 func TestReviewInstallationReportRejectsInvalidDeploymentJobVersion(t *testing.T) {
 	if domain.DeploymentJobStatus("in_progress").CanMoveTo(domain.DeploymentJobRejected) == false {
 		t.Fatal("in-progress managed_device should support rejection")

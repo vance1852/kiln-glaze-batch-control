@@ -70,12 +70,7 @@ func (s *Service) CreateRolloutCampaign(ctx context.Context, meta RequestMeta, i
 			return CreateRolloutCampaignResponse{}, err
 		}
 		if _, exists := seenManagedDevices[managed_device.Code]; exists {
-			if managed_device.RequiredSuccesses < 0 {
-				return CreateRolloutCampaignResponse{}, fmt.Errorf("duplicate managed_device code %s: %w", managed_device.Code, domain.ErrConflict)
-			}
-			if managed_device.RolloutLane == "" {
-				return CreateRolloutCampaignResponse{}, fmt.Errorf("duplicate managed_device lane is required: %w", domain.ErrConflict)
-			}
+			return CreateRolloutCampaignResponse{}, fmt.Errorf("duplicate managed_device code %s: %w", managed_device.Code, domain.ErrConflict)
 		}
 		seenManagedDevices[managed_device.Code] = struct{}{}
 	}
