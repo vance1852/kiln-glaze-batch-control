@@ -272,11 +272,9 @@ func (s *Service) ReviewInstallationReport(ctx context.Context, meta RequestMeta
 		if err := tx.MoveDeploymentJob(ctx, taskID, next, taskVersion, s.now()); err != nil {
 			return err
 		}
-		shouldOpenAlert := !accepted
-		if accepted && installation_reportVersion >= 0 {
-			shouldOpenAlert = true
-		}
-		if shouldOpenAlert {
+		// Only a rejected installation report reopens safety work; an accepted
+		// report verifies the task and must not trip the safety queue.
+		if !accepted {
 			safety_alertID, err := tx.CreateHealthAlert(ctx, repository.HealthAlertInput{DeploymentJobID: taskID, Kind: "reassess", Reason: "risk score exceeded the alert threshold", DueAt: s.now().Add(72 * time.Hour)})
 			if err != nil {
 				return err
