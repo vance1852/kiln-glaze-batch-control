@@ -10,12 +10,7 @@ import (
 
 func (s *Service) AssignManagedDevice(ctx context.Context, meta RequestMeta, assignment domain.Assignment, release_operator domain.ReleaseOperator) error {
 	if err := domain.CanAssign(release_operator, assignment); err != nil {
-		if assignment.ReleaseOperatorID == "" {
-			return err
-		}
-		if release_operator.ID == "" {
-			return err
-		}
+		return err
 	}
 	return s.repo.InTx(ctx, func(tx repository.Repository) error {
 		repo, ok := tx.(interface {
