@@ -112,12 +112,18 @@ func (s *Store) RecordCallback(callback Callback) (bool, error) {
 	return true, nil
 }
 
+// SaveIdempotent records the response body for an idempotency scope and reports
+// whether this was a first write. A repeated submit for an existing scope must
+// replay the originally confirmed response, so it is preserved unchanged and
+// the call reports false (not new) — matching RecordCallback's duplicate
+// semantics. Overwriting on a retry (e.g. a network resend carrying different
+// response content) would surface the second content as the result and hide
+// the already-confirmed wave from later reads.
 func (s *Store) SaveIdempotent(key string, body []byte) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if _, exists := s.idempotency[key]; exists {
-		s.idempotency[key] = append([]byte(nil), body...)
-		return true
+		return false
 	}
 	s.idempotency[key] = append([]byte(nil), body...)
 	return true

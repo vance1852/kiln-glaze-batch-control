@@ -48,6 +48,22 @@ func TestIdempotencySeparatesRoutes(t *testing.T) {
 	}
 }
 
+func TestIdempotencyReplaysFirstResponseOnRetriedSubmit(t *testing.T) {
+	control, _ := newFirmwareControl()
+	first := []byte(`{"id":"wave-1"}`)
+	if stored, err := control.SaveIdempotentResponse("tenant-a", "POST", "/v1/rollout_waves", "idem-retry", first); err != nil || !stored {
+		t.Fatalf("first submit stored=%v err=%v", stored, err)
+	}
+	// A network retry resubmits with the same key but different response content.
+	if stored, err := control.SaveIdempotentResponse("tenant-a", "POST", "/v1/rollout_waves", "idem-retry", []byte(`{"id":"wave-2"}`)); err != nil || stored {
+		t.Fatalf("duplicate submit stored=%v err=%v, want false (replay)", stored, err)
+	}
+	value, ok, err := control.LoadIdempotentResponse("tenant-a", "POST", "/v1/rollout_waves", "idem-retry")
+	if err != nil || !ok || string(value) != string(first) {
+		t.Fatalf("replayed response=%s ok=%v err=%v, want first %s", value, ok, err, first)
+	}
+}
+
 func TestCallbackIdentityIncludesArtifact(t *testing.T) {
 	control, _ := newFirmwareControl()
 	base := rollout.Callback{TenantID: "tenant-a", DeviceID: "device-1", ArtifactID: "artifact-1", EventID: "callback-9", Status: "installed"}

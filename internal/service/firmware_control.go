@@ -23,15 +23,16 @@ func NewFirmwareControl(store *rollout.Store) *FirmwareControl {
 
 func (c *FirmwareControl) Store() *rollout.Store { return c.store }
 
+// SaveIdempotentResponse stores the response for an idempotency key when it is
+// the first write and reports true (new). A repeated submit for an existing
+// key replays the originally confirmed response instead of overwriting it, so
+// it reports false (replay) — the second (possibly differing) content from a
+// network retry never becomes the visible result, and later loads keep seeing
+// the first confirmed wave.
 func (c *FirmwareControl) SaveIdempotentResponse(tenantID, method, path, key string, response []byte) (bool, error) {
 	scope, err := rollout.IdempotencyKey(tenantID, method, path, key)
 	if err != nil {
 		return false, err
-	}
-	if _, found, err := c.LoadIdempotentResponse(tenantID, method, path, key); err != nil {
-		return false, err
-	} else if found {
-		return true, nil
 	}
 	return c.store.SaveIdempotent(scope, response), nil
 }
